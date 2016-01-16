@@ -13,11 +13,11 @@ def process_df(DF, cols, ncols):
     else:  # if you want to dummy code it yourself or do all the cols
         K = ncols
         if ncols is None:  # be sure to pass K if you didn't multi-index
-            K = len(DF.columns)  # ... it with mca.dummy()
+            K = DF.shape[1]  # ... it with mca.dummy()
             if not K:
                 raise ValueError("Your DataFrame has no columns.")
         elif not isinstance(ncols, int) or ncols <= 0 or \
-                        ncols > len(DF.columns):  # if you dummy coded it yourself
+                        ncols > DF.shape[1]:  # if you dummy coded it yourself
             raise ValueError("You must pass a valid number of columns.")
         X = DF
     J = X.shape[1]
@@ -38,7 +38,7 @@ def _mul(*args):
 
 class MCA(object):
     """Run MCA on selected columns of a pd DataFrame.
-    
+
     If the column are specified, assume that they hold
     categorical variables that need to be replaced with
     dummy indicators, otherwise process the DataFrame as is.
@@ -52,10 +52,10 @@ class MCA(object):
     def __init__(self, DF, cols=None, ncols=None, benzecri=True, TOL=1e-4):
 
         X, self.K, self.J = process_df(DF, cols, ncols)
-        S = X.sum().sum()
+        S = float(X.sum().sum())
         Z = X / S  # correspondence matrix
         self.r = Z.sum(axis=1)
-        self.c = Z.sum()
+        self.c = Z.sum(axis=0)
         self._numitems = len(DF)
         self.cor = benzecri
         self.D_r = np.diag(1/np.sqrt(self.r))
