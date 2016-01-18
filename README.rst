@@ -33,3 +33,8 @@ Reference
 ---------
 
 Michael Greenacre, Jörg Blasius (2006). `Multiple Correspondence Analysis and Related Methods <http://www.crcpress.com/product/isbn/9781584886280>`_, CRC Press. ISBN 1584886285.
+
+Fork info
+---------
+
+Allow `mca` to be used with both `pandas` dataframes, as well as `numpy` arrays.
