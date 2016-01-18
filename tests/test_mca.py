@@ -27,7 +27,7 @@ class TestMca(unittest.TestCase):
         # correction
         df = pandas.read_table('data/burgundies.csv', skiprows=1, sep=',',
                                index_col=0)
-        mca_df = MCA(df.drop('oak_type', axis=1), ncols=10)
+        mca_df = MCA(df.drop('oak_type', axis=1).as_matrix(), ncols=10)
         assert_allclose([0.7004, 0.0123, 0.0003], mca_df.E[:3], atol=1e-4)
         true_fs_row = [[0.86, 0.08], [-0.71, -0.16], [-0.92, 0.08],
                        [-0.86, 0.08], [0.92, 0.08], [0.71, -0.16]]
@@ -63,7 +63,7 @@ class TestMca(unittest.TestCase):
         # mca_df.fs_c_sup(dummy(oak))
 
         # ... then without Benzecri correction
-        mca_df_i = MCA(df.drop('oak_type', axis=1), ncols=10, benzecri=False)
+        mca_df_i = MCA(df.drop('oak_type', axis=1).as_matrix(), ncols=10, benzecri=False)
         assert_allclose([0.8532, 0.2, 0.1151, 0.0317],
                         (mca_df_i.s**2)[:4], atol=1e-4)
 
@@ -83,7 +83,7 @@ class TestMca(unittest.TestCase):
         # Springer Encyclopedia of Social Networks and Mining.
         df = pandas.read_table('data/music_color.csv', skiprows=0, index_col=0,
                                sep=',')
-        mca_df = MCA(df, benzecri=False)
+        mca_df = MCA(df.as_matrix(), benzecri=False)
 
         # Table 1, page 13
         assert_allclose(mca_df.r, [.121, .091, .126, .116, .096, .066, .071,
@@ -134,7 +134,7 @@ class TestMca(unittest.TestCase):
 
         df = pandas.read_table('data/french_writers.csv', skiprows=0,
                                index_col=0, sep=',')
-        mca_df = MCA(df, benzecri=False)
+        mca_df = MCA(df.as_matrix(), benzecri=False)
 
         assert_allclose(mca_df.c, [.2973, .5642, .1385], atol=1e-4)
         assert_allclose(mca_df.r, [.0189, .1393, .2522, .3966, .1094, .0835],
