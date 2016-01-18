@@ -26,9 +26,14 @@ def process_df(DF, cols, ncols):
 
 def dummy(DF, cols=None):
     """Dummy code select columns of a DataFrame."""
-    return pd.concat((pd.get_dummies(DF[col])
-        for col in (DF.columns if cols is None else cols)),
-        axis=1, keys=DF.columns)
+    from numpy import ndarray
+    if isinstance(DF, ndarray):
+        from sklearn.preprocessing import OneHotEncoder
+        return OneHotEncoder(sparse=False).fit_transform(DF[:, cols])
+    else:
+        return pd.concat((pd.get_dummies(DF[col])
+            for col in (DF.columns if cols is None else cols)),
+            axis=1, keys=DF.columns)
 
 
 def _mul(*args):
