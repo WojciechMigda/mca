@@ -52,9 +52,10 @@ class MCA(object):
     'ncols': The number of columns before dummy coding. To be passed if cols isn't.
     'benzecri': Perform Benzécri correction (default: True)
     'TOL': value below which to round eigenvalues to zero (default: 1e-4)
+    'svd': SVD algorithm to use (default: 'linalg'). Other recognized values are: 'randomized' and 'svds'.
     """
 
-    def __init__(self, DF, cols=None, ncols=None, benzecri=True, TOL=1e-4):
+    def __init__(self, DF, cols=None, ncols=None, benzecri=True, TOL=1e-4, svd='linalg'):
 
         X, self.K, self.J = process_df(DF, cols, ncols)
         S = float(X.sum().sum())
@@ -63,12 +64,35 @@ class MCA(object):
         self.c = Z.sum(axis=0)
         self._numitems = len(DF)
         self.cor = benzecri
-        self.D_r = np.diag(1/np.sqrt(self.r))
-        Z_c = Z - np.outer(self.r, self.c)  # standardized residuals matrix
-        self.D_c = np.diag(1/np.sqrt(self.c))
+        if svd == 'linalg':
+            self.D_r = np.diag(1/np.sqrt(self.r))
+            Z_c = Z - np.outer(self.r, self.c)  # standardized residuals matrix
+            self.D_c = np.diag(1/np.sqrt(self.c))
 
-        # another option, not pursued here, is sklearn.decomposition.TruncatedSVD
-        self.P, self.s, self.Q = np.linalg.svd(_mul(self.D_r, Z_c, self.D_c))
+            self.P, self.s, self.Q = np.linalg.svd(_mul(self.D_r, Z_c, self.D_c))
+            pass
+        elif svd == 'randomized':
+            from scipy.sparse import csc_matrix
+            from scipy.sparse import spdiags
+
+            self.D_r = spdiags(1. / np.sqrt(self.r), 0, len(self.r), len(self.r))
+            Z_c = csc_matrix(Z - np.outer(self.r, self.c))  # standardized residuals matrix
+            self.D_c = spdiags(1. / np.sqrt(self.c), 0, len(self.c), len(self.c))
+
+            from sklearn.utils.extmath import randomized_svd
+            self.P, self.s, self.Q = randomized_svd(self.D_r.dot(Z_c).dot(self.D_c), self.c.shape[0])
+            pass
+        elif svd == 'svds':
+            from scipy.sparse import csc_matrix
+            from scipy.sparse import spdiags
+
+            self.D_r = spdiags(1. / np.sqrt(self.r), 0, len(self.r), len(self.r))
+            Z_c = csc_matrix(Z - np.outer(self.r, self.c))  # standardized residuals matrix
+            self.D_c = spdiags(1. / np.sqrt(self.c), 0, len(self.c), len(self.c))
+
+            from scipy.sparse.linalg import svds
+            self.P, self.s, self.Q = svds(self.D_r.dot(Z_c).dot(self.D_c), self.c.shape[0])
+            pass
 
         self.E = None
         E = self._benzecri() if self.cor else self.s**2
@@ -107,7 +131,12 @@ class MCA(object):
         num2ret = N if N else self.k
         s = -np.sqrt(self.L) if self.cor else self.s
         S = diagsvd(s[:num2ret], self._numitems, num2ret)
-        self.F = _mul(self.D_r, self.P, S)
+
+        from numpy import ndarray
+        if not isinstance(self.D_r, ndarray):
+            self.F = self.D_r.dot(self.P).dot(S[:self.P.shape[1]])
+        else:
+            self.F = _mul(self.D_r, self.P, S)
         return self.F
 
     def fs_c(self, percent=0.9, N=None):
